@@ -64,6 +64,33 @@ Clarinet.test({
 });
 
 Clarinet.test({
+    name: "Fails with duplicate beneficiaries",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const owner = accounts.get('wallet_1')!;
+        const beneficiary1 = accounts.get('wallet_2')!;
+        
+        const block = chain.mineBlock([
+            Tx.contractCall('digital-will', 'set-will', [
+                types.list([
+                    types.tuple({
+                        beneficiary: types.principal(beneficiary1.address),
+                        share: types.uint(60)
+                    }),
+                    types.tuple({
+                        beneficiary: types.principal(beneficiary1.address),
+                        share: types.uint(40)
+                    })
+                ]),
+                types.uint(1000000),
+                types.uint(144)
+            ], owner.address)
+        ]);
+        
+        block.receipts[0].result.expectErr().expectUint(107);
+    },
+});
+
+Clarinet.test({
     name: "Can claim correct share amounts",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const owner = accounts.get('wallet_1')!;
@@ -96,6 +123,5 @@ Clarinet.test({
         ]);
         
         block.receipts[0].result.expectOk().expectBool(true);
-        // TODO: Add balance assertion for 60% share
     },
 });
